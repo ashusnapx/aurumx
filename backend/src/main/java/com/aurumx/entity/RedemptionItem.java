@@ -18,6 +18,8 @@ public class RedemptionItem {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "redemption_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @lombok.ToString.Exclude
     private RedemptionHistory redemption;
     
     @ManyToOne(fetch = FetchType.LAZY)

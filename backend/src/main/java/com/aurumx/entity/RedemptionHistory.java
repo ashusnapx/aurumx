@@ -25,6 +25,8 @@ public class RedemptionHistory {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @lombok.ToString.Exclude
     private Customer customer;
     
     @Column(name = "total_points_used", nullable = false, precision = 10, scale = 2)

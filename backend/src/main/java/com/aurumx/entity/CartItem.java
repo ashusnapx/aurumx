@@ -21,6 +21,8 @@ public class CartItem {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @lombok.ToString.Exclude
     private Customer customer;
     
     @ManyToOne(fetch = FetchType.LAZY)

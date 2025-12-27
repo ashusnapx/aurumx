@@ -22,6 +22,8 @@ public class Transaction {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "credit_card_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @lombok.ToString.Exclude
     private CreditCard creditCard;
     
     @Column(nullable = false, precision = 10, scale = 2)
