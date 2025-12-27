@@ -1,6 +1,7 @@
 package com.aurumx.controller;
 
 import com.aurumx.dto.request.AddToCartRequest;
+import com.aurumx.dto.response.CartResponse;
 import com.aurumx.dto.response.RedemptionResponse;
 import com.aurumx.entity.CartItem;
 import com.aurumx.entity.RedemptionHistory;
@@ -27,8 +28,8 @@ public class CartController {
     }
     
     @GetMapping("/{customerId}")
-    public ResponseEntity<List<CartItem>> getCart(@PathVariable Long customerId) {
-        List<CartItem> cart = cartService.getCart(customerId);
+    public ResponseEntity<CartResponse> getCart(@PathVariable Long customerId) {
+        CartResponse cart = cartService.getCart(customerId);
         return ResponseEntity.ok(cart);
     }
     
@@ -38,7 +39,7 @@ public class CartController {
         return ResponseEntity.noContent().build();
     }
     
-    @PostMapping("/redeem/{customerId}")
+    @PostMapping("/{customerId}/redeem")
     public ResponseEntity<RedemptionResponse> redeemCart(@PathVariable Long customerId) {
         RedemptionResponse response = cartService.redeemCart(customerId);
         return ResponseEntity.ok(response);

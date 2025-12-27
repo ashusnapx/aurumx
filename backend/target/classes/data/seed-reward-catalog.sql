@@ -24,20 +24,20 @@ INSERT INTO reward_category (name, description, display_order) VALUES
 
 -- Category 1: Gift Cards
 INSERT INTO reward_item (category_id, name, description, points_cost, available) VALUES
-((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Google Play', 'Google Play gift card worth ₹1000', 5000, true),
-((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Apple', 'Apple App Store & iTunes gift card worth ₹1200', 6000, true),
-((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Amazon', 'Amazon shopping voucher worth ₹900', 4500, true),
-((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Flipkart', 'Flipkart e-gift voucher worth ₹900', 4500, true),
-((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Swiggy', 'Swiggy food delivery voucher worth ₹700', 3500, true),
-((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Zomato', 'Zomato dining and delivery voucher worth ₹700', 3500, true);
+((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Google Play Gift Card', 'Google Play gift card worth ₹1000', 5000, true),
+((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Apple Gift Card', 'Apple App Store & iTunes gift card worth ₹1200', 6000, true),
+((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Amazon Gift Card', 'Amazon shopping voucher worth ₹900', 4500, true),
+((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Flipkart Gift Card', 'Flipkart e-gift voucher worth ₹900', 4500, true),
+((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Swiggy Gift Card', 'Swiggy food delivery voucher worth ₹700', 3500, true),
+((SELECT id FROM reward_category WHERE name = 'Gift Cards'), 'Zomato Gift Card', 'Zomato dining and delivery voucher worth ₹700', 3500, true);
 
 -- Category 2: Travel & Holidays
 INSERT INTO reward_item (category_id, name, description, points_cost, available) VALUES
-((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Manali', '3 nights 4 days Manali holiday package for 2', 40000, true),
-((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Kanyakumari', '2 nights 3 days Kanyakumari temple tour for 2', 30000, true),
-((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Goa', '4 nights 5 days Goa beach resort package for 2', 45000, true),
-((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Jaipur', '2 nights 3 days Jaipur heritage tour for 2', 28000, true),
-((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Ooty', '3 nights 4 days Ooty hill station package for 2', 38000, true);
+((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Trip to Manali', '3 nights 4 days Manali holiday package for 2', 40000, true),
+((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Trip to Kanyakumari', '2 nights 3 days Kanyakumari temple tour for 2', 30000, true),
+((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Goa Beach Holiday', '4 nights 5 days Goa beach resort package for 2', 45000, true),
+((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Jaipur Heritage Trip', '2 nights 3 days Jaipur heritage tour for 2', 28000, true),
+((SELECT id FROM reward_category WHERE name = 'Travel & Holidays'), 'Ooty Hill Station Trip', '3 nights 4 days Ooty hill station package for 2', 38000, true);
 
 -- Category 3: Shopping & Electronics
 INSERT INTO reward_item (category_id, name, description, points_cost, available) VALUES
@@ -63,9 +63,9 @@ INSERT INTO reward_item (category_id, name, description, points_cost, available)
 
 -- Category 6: Learning & Subscriptions
 INSERT INTO reward_item (category_id, name, description, points_cost, available) VALUES
-((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'Online Course', 'Access to premium online course on any platform', 10000, true),
-((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'E-Book', 'E-book voucher for any book of your choice', 5000, true),
-((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'Coding Platform', '6-month subscription to coding learning platform', 12000, true),
+((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'Online Course Voucher', 'Access to premium online course on any platform', 10000, true),
+((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'E-Book Subscription', 'E-book voucher for any book of your choice', 5000, true),
+((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'Coding Platform Access', '6-month subscription to coding learning platform', 12000, true),
 ((SELECT id FROM reward_category WHERE name = 'Learning & Subscriptions'), 'Music Subscription', '6-month premium music streaming subscription', 4000, true);
 
 -- Verification query to check inserted data

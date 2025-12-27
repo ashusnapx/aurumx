@@ -38,24 +38,36 @@ import { CartService } from '../../../core/services/cart.service';
       </div>
 
       <div class="rewards-grid">
-         <div class="reward-card" *ngFor="let item of rewards()">
-            <div class="card-image-placeholder">🎁</div>
-            <div class="card-content">
-               <h3>{{ item.name }}</h3>
-               <p class="description">{{ item.description }}</p>
-               <div class="price-row">
-                  <span class="price">{{ item.pointsCost }} pts</span>
-                  <button 
-                    class="btn btn-sm btn-secondary" 
-                    (click)="addToCart(item)"
-                    [disabled]="!customerId"
-                  >
-                    Add to Cart
-                  </button>
-               </div>
-            </div>
-         </div>
-      </div>
+          <div class="reward-card" *ngFor="let item of rewards()">
+             <div class="card-image-placeholder">
+                <span style="font-size: 3rem;">🎁</span>
+             </div>
+             <div class="card-content">
+                <h3>{{ item.name }}</h3>
+                <p class="description">{{ item.description }}</p>
+                <div class="price-row">
+                   <span class="price-badge">{{ item.pointsCost }} pts</span>
+                </div>
+                
+                <div class="action-row">
+                   <div class="quantity-control">
+                      <button class="qty-btn" (click)="updateQuantity(item.id, -1)">-</button>
+                      <span class="qty-val">{{ getQuantity(item.id) }}</span>
+                      <button class="qty-btn" (click)="updateQuantity(item.id, 1)">+</button>
+                   </div>
+                   <button 
+                     class="btn btn-sm btn-primary add-btn" 
+                     (click)="addToCart(item)"
+                     [disabled]="!customerId"
+                   >
+                     Add to Cart
+                   </button>
+                </div>
+             </div>
+          </div>
+       </div>
+
+       <div class="toast" [class.show]="toastMessage()">{{ toastMessage() }}</div>
     </div>
   `,
   styles: [`
@@ -113,8 +125,30 @@ import { CartService } from '../../../core/services/cart.service';
     .card-content h3 { margin: 0 0 0.5rem 0; font-size: 1.1rem; }
     .description { color: #666; font-size: 0.9rem; margin-bottom: 1rem; height: 40px; overflow: hidden; }
     
-    .price-row { display: flex; justify-content: space-between; align-items: center; }
-    .price { font-weight: 700; color: var(--color-primary-dark); }
+    .price-row { margin-bottom: 1rem; }
+    .price-badge { 
+        background: #e3f2fd; color: #1976d2; 
+        padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; font-size: 0.9rem;
+    }
+    
+    .action-row { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; }
+    
+    .quantity-control {
+        display: flex; align-items: center; border: 1px solid #ddd; border-radius: 4px; overflow: hidden;
+    }
+    .qty-btn { border: none; background: #f5f5f5; padding: 0.25rem 0.6rem; cursor: pointer; font-weight: bold; }
+    .qty-btn:hover { background: #eee; }
+    .qty-val { padding: 0 0.6rem; font-size: 0.9rem; min-width: 20px; text-align: center; }
+    
+    .add-btn { flex: 1; }
+
+    .toast {
+       position: fixed; bottom: 20px; right: 20px;
+       background: #323232; color: white; padding: 12px 24px;
+       border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+       opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 1000;
+    }
+    .toast.show { opacity: 1; }
   `]
 })
 export class RewardCatalogComponent implements OnInit {
@@ -127,6 +161,10 @@ export class RewardCatalogComponent implements OnInit {
   selectedCategory = signal<number | null>(null);
   
   customerId: number | null = null;
+
+  quantities = signal<Record<number, number>>({});
+  toastMessage = signal<string>('');
+  toastTimeout: any;
 
   ngOnInit() {
     this.route.parent?.params.subscribe(params => {
@@ -150,19 +188,42 @@ export class RewardCatalogComponent implements OnInit {
      this.loadRewards(id);
   }
 
+  // Helper to get quantity safely
+  getQuantity(itemId: number): number {
+     return this.quantities()[itemId] || 1;
+  }
+
+  updateQuantity(itemId: number, change: number) {
+     const current = this.getQuantity(itemId);
+     const newQty = Math.max(1, current + change);
+     
+     this.quantities.update(map => ({
+         ...map,
+         [itemId]: newQty
+     }));
+  }
+
+  showToast(msg: string) {
+      if (this.toastTimeout) clearTimeout(this.toastTimeout);
+      this.toastMessage.set(msg);
+      this.toastTimeout = setTimeout(() => this.toastMessage.set(''), 3000);
+  }
+
   addToCart(item: any) {
      if (!this.customerId) {
-        alert('Internal Error: Customer ID missing');
+        this.showToast('Error: Customer ID missing');
         return;
      }
+
+     const qty = this.getQuantity(item.id);
 
      this.cartService.addToCart({
         customerId: this.customerId,
         rewardItemId: item.id,
-        quantity: 1
+        quantity: qty
      }).subscribe({
-        next: () => alert('Added to cart'),
-        error: (err) => alert('Failed to add: ' + err.error?.message)
+        next: () => this.showToast(`Added ${qty}x ${item.name} to cart`),
+        error: (err) => this.showToast('Failed to add: ' + (err.error?.message || 'Unknown error'))
      });
   }
 }

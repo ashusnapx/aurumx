@@ -52,8 +52,33 @@ public class CartService {
                 request.getQuantity(), rewardItem.getName(), customer.getName());
     }
     
-    public List<CartItem> getCart(Long customerId) {
-        return cartItemRepository.findByCustomerId(customerId);
+    public com.aurumx.dto.response.CartResponse getCart(Long customerId) {
+        List<CartItem> items = cartItemRepository.findByCustomerId(customerId);
+        
+        List<com.aurumx.dto.response.CartResponse.CartItemDto> itemDtos = new ArrayList<>();
+        int totalPoints = 0;
+        
+        for (CartItem item : items) {
+            int itemTotal = item.getRewardItem().getPointsCost() * item.getQuantity();
+            totalPoints += itemTotal;
+            
+            itemDtos.add(new com.aurumx.dto.response.CartResponse.CartItemDto(
+                item.getId(),
+                item.getRewardItem().getId(),
+                item.getRewardItem().getName(),
+                item.getQuantity(),
+                item.getRewardItem().getPointsCost(),
+                itemTotal,
+                item.getAddedAt()
+            ));
+        }
+        
+        return new com.aurumx.dto.response.CartResponse(
+            customerId, // using customerId as cart ID roughly
+            customerId,
+            itemDtos,
+            totalPoints
+        );
     }
     
     @Transactional

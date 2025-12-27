@@ -18,6 +18,7 @@ public class RewardItem {
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private RewardCategory category;
     
     @Column(nullable = false)

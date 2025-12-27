@@ -5,6 +5,7 @@ import com.aurumx.service.RewardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/rewards")
@@ -23,5 +24,20 @@ public class RewardController {
     public ResponseEntity<RewardBalanceResponse> getRewardBalance(@PathVariable Long customerId) {
         RewardBalanceResponse response = rewardService.getRewardBalance(customerId);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/catalog/categories")
+    public ResponseEntity<List<com.aurumx.entity.RewardCategory>> getCategories() {
+        return ResponseEntity.ok(rewardService.getCategories());
+    }
+
+    @GetMapping("/catalog/items")
+    public ResponseEntity<List<com.aurumx.entity.RewardItem>> getAllRewardItems() {
+        return ResponseEntity.ok(rewardService.getRewards(null));
+    }
+
+    @GetMapping("/catalog/category/{categoryId}")
+    public ResponseEntity<List<com.aurumx.entity.RewardItem>> getRewardItemsByCategory(@PathVariable Long categoryId) {
+        return ResponseEntity.ok(rewardService.getRewards(categoryId));
     }
 }

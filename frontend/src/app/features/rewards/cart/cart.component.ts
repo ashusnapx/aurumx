@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { CartService, Cart } from '../../../core/services/cart.service';
+import { RewardService } from '../../../core/services/reward.service';
 
 @Component({
   selector: 'app-cart',
@@ -10,7 +11,11 @@ import { CartService, Cart } from '../../../core/services/cart.service';
   template: `
     <div class="container" *ngIf="cart()">
       <div class="page-header">
-        <h1 class="page-title">Shopping Cart</h1>
+        <h1 class="page-title" *ngIf="cart()">Shopping Cart</h1>
+      </div>
+      
+      <div class="balance-banner" *ngIf="rewardBalance()">
+         <span>Available Balance: <strong>{{ rewardBalance()!.pointsBalance | number:'1.2-2' }} pts</strong></span>
       </div>
 
       <div class="cart-container">
@@ -41,9 +46,10 @@ import { CartService, Cart } from '../../../core/services/cart.service';
             <button 
                class="btn btn-primary full-width" 
                (click)="redeem()"
-               [disabled]="isRedeeming()"
+               [disabled]="isRedeeming() || !canAfford()"
+               [class.btn-error]="!canAfford()"
             >
-               {{ isRedeeming() ? 'Redeeming...' : 'Redeem Now' }}
+               {{ isRedeeming() ? 'Redeeming...' : (canAfford() ? 'Redeem Now' : 'Insufficient Balance') }}
             </button>
             <p *ngIf="error()" class="error-msg">{{ error() }}</p>
          </div>
@@ -77,23 +83,41 @@ import { CartService, Cart } from '../../../core/services/cart.service';
     
     .full-width { width: 100%; margin-top: 1rem; }
     .error-msg { color: var(--color-error); margin-top: 1rem; text-align: center; }
+    
+    .balance-banner { 
+        background: #e3f2fd; color: #1976d2; 
+        padding: 1rem; border-radius: 8px; margin-bottom: 2rem; 
+        text-align: right;
+    }
+    
+    .btn-error { background-color: #ef5350 !important; cursor: not-allowed; }
   `]
 })
 export class CartComponent implements OnInit {
   cartService = inject(CartService);
+  rewardService = inject(RewardService);
   route = inject(ActivatedRoute);
   router = inject(Router);
 
   cart = signal<Cart | null>(null);
   customerId: number | null = null;
+  rewardBalance = signal<{pointsBalance: number} | null>(null);
+  
   isRedeeming = signal(false);
   error = signal('');
+  
+  canAfford = () => {
+      const balance = this.rewardBalance()?.pointsBalance || 0;
+      const cost = this.cart()?.totalPoints || 0;
+      return balance >= cost;
+  };
 
   ngOnInit() {
     this.route.parent?.params.subscribe(params => {
        this.customerId = +params['id'];
        if (this.customerId) {
           this.loadCart(this.customerId);
+          this.rewardService.getRewardBalance(this.customerId).subscribe(b => this.rewardBalance.set(b));
        }
     });
   }

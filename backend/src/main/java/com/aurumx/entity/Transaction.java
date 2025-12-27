@@ -37,6 +37,9 @@ public class Transaction {
     
     @Column(nullable = false)
     private boolean processed = false;
+
+    @Column(name = "reward_points", precision = 10, scale = 2)
+    private BigDecimal rewardPoints;
     
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

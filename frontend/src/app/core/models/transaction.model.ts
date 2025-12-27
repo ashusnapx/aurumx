@@ -5,6 +5,7 @@ export interface Transaction {
   merchant: string;
   transactionDate: string;
   processed: boolean;
+  rewardPoints?: number;
 }
 
 export interface GenerateTransactionsRequest {

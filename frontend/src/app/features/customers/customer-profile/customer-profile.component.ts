@@ -161,11 +161,12 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
                      <th>Merchant</th>
                      <th>Amount</th>
                      <th>Status</th>
+                     <th>Rewards Earned</th>
                   </tr>
                </thead>
                <tbody>
                   <tr *ngFor="let tx of transactions()">
-                     <td>{{ tx.transactionDate | date:'medium' }}</td>
+                     <td>{{ tx.transactionDate | date:'mediumDate' }}</td>
                      <td>{{ tx.merchant }}</td>
                      <td>{{ tx.amount | currency:'INR' }}</td>
                      <td>
@@ -173,11 +174,25 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
                            {{ tx.processed ? 'Processed' : 'Pending' }}
                         </span>
                      </td>
+                     <td>
+                        <span *ngIf="tx.processed && tx.rewardPoints" class="points-earned">
+                           +{{ tx.rewardPoints | number:'1.0-2' }} pts
+                        </span>
+                        <span *ngIf="!tx.processed" class="text-muted">-</span>
+                     </td>
                   </tr>
                   <tr *ngIf="transactions().length === 0">
-                     <td colspan="4" class="empty-text">No transactions found for this card.</td>
+                     <td colspan="5" class="empty-text">No transactions found for this card.</td>
                   </tr>
                </tbody>
+               <tfoot *ngIf="transactions().length > 0">
+                   <tr class="total-row">
+                       <td colspan="2">Total for Card</td>
+                       <td>{{ calculateTotalSpend(transactions()) | currency:'INR' }}</td>
+                       <td></td>
+                       <td>{{ calculateTotalPoints(transactions()) | number:'1.0-2' }} pts</td>
+                   </tr>
+               </tfoot>
             </table>
          </div>
       </div>
@@ -277,6 +292,11 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
     .table { width: 100%; border-collapse: collapse; }
     .table th, .table td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
     .empty-text { text-align: center; padding: 2rem; color: #888; }
+    
+    .points-earned { font-weight: bold; color: var(--color-primary-dark); }
+    .text-muted { color: #aaa; }
+    
+    .total-row { background: #fafafa; font-weight: bold; border-top: 2px solid #ddd; }
   `]
 })
 export class CustomerProfileComponent implements OnInit {
@@ -409,5 +429,13 @@ export class CustomerProfileComponent implements OnInit {
          },
          error: () => this.isProcessing.set(false)
      });
+  }
+
+  calculateTotalSpend(txs: Transaction[]): number {
+      return txs.reduce((acc, tx) => acc + tx.amount, 0);
+  }
+
+  calculateTotalPoints(txs: Transaction[]): number {
+      return txs.reduce((acc, tx) => acc + (tx.rewardPoints || 0), 0);
   }
 }

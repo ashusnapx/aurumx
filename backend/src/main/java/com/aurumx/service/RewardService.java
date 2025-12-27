@@ -4,6 +4,8 @@ import com.aurumx.config.RewardConfig;
 import com.aurumx.dto.response.RewardBalanceResponse;
 import com.aurumx.entity.Customer;
 import com.aurumx.entity.Reward;
+import com.aurumx.entity.RewardCategory;
+import com.aurumx.entity.RewardItem;
 import com.aurumx.entity.Transaction;
 import com.aurumx.enums.CustomerType;
 import com.aurumx.exception.ResourceNotFoundException;
@@ -28,6 +30,8 @@ public class RewardService {
     private final RewardRepository rewardRepository;
     private final CustomerRepository customerRepository;
     private final TransactionRepository transactionRepository;
+    private final com.aurumx.repository.RewardCategoryRepository rewardCategoryRepository;
+    private final com.aurumx.repository.RewardItemRepository rewardItemRepository;
     private final RewardConfig rewardConfig;
     
     /**
@@ -72,8 +76,9 @@ public class RewardService {
             
             totalRewards = totalRewards.add(rewardPoints);
             
-            // Mark transaction as processed
+            // Mark transaction as processed and save points
             transaction.setProcessed(true);
+            transaction.setRewardPoints(rewardPoints);
         }
         
         // Update reward balances
@@ -114,5 +119,16 @@ public class RewardService {
                 reward.getPointsBalance(),
                 reward.getLifetimeEarned()
         );
+    }
+
+    public List<RewardCategory> getCategories() {
+        return rewardCategoryRepository.findAllByOrderByDisplayOrderAsc();
+    }
+
+    public List<RewardItem> getRewards(Long categoryId) {
+        if (categoryId != null) {
+            return rewardItemRepository.findByCategoryIdAndAvailableTrue(categoryId);
+        }
+        return rewardItemRepository.findByAvailableTrue();
     }
 }

@@ -32,6 +32,7 @@
 /Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/dto/request/AddCreditCardRequest.java
 /Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/dto/request/GenerateTransactionsRequest.java
 /Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/controller/TransactionController.java
+/Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/dto/response/CartResponse.java
 /Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/entity/RewardItem.java
 /Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/entity/Transaction.java
 /Users/ashutoshkumar/aurumx/backend/src/main/java/com/aurumx/service/RewardCatalogService.java
