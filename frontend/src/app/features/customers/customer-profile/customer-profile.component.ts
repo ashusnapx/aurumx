@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CustomerService } from '../../../core/services/customer.service';
 import { CreditCardService } from '../../../core/services/credit-card.service';
 import { TransactionService } from '../../../core/services/transaction.service';
@@ -14,7 +14,7 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
 @Component({
   selector: 'app-customer-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   template: `
     <div class="container" *ngIf="customer()">
       <div class="page-header">
@@ -51,18 +51,38 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
           <h3>Reward Balance</h3>
           <div class="balance-display">
             <span class="points">{{ rewardBalance()?.pointsBalance | number:'1.2-2' }}</span>
-            <span class="unit">Points</span>
+            <span class="unit">Total Points</span>
           </div>
           <div class="lifetime">
              Lifetime Earned: {{ rewardBalance()?.lifetimeEarned | number:'1.2-2' }}
           </div>
-          <button 
-            class="btn btn-primary full-width" 
-            (click)="processRewards()" 
-            [disabled]="isProcessing()"
-          >
-            {{ isProcessing() ? 'Processing...' : 'Process Pending Transactions' }}
-          </button>
+          
+          <!-- Card-wise breakdown -->
+          <div class="card-rewards-breakdown" *ngIf="rewardBalance()?.cardRewards?.length">
+            <h4>Points by Card</h4>
+            <div class="card-reward-item" *ngFor="let card of rewardBalance()?.cardRewards">
+              <span class="card-num">{{ card.cardNumber }}</span>
+              <span class="card-pts">{{ card.points | number:'1.2-2' }} pts</span>
+            </div>
+          </div>
+          
+          <!-- Card selection for processing -->
+          <div class="process-section" style="margin-top: 1rem;">
+            <label style="font-size: 0.85rem; color: #666;">Select Card to Process:</label>
+            <select [(ngModel)]="selectedCardToProcess" style="width: 100%; padding: 0.5rem; margin: 0.5rem 0; border-radius: 4px; border: 1px solid #ddd;">
+              <option [ngValue]="null">-- Select a Card --</option>
+              <option *ngFor="let card of creditCards()" [ngValue]="card.id">
+                {{ card.cardNumber }} ({{ card.cardHolderName }})
+              </option>
+            </select>
+            <button 
+              class="btn btn-primary full-width" 
+              (click)="processRewardsByCard()" 
+              [disabled]="isProcessing() || !selectedCardToProcess"
+            >
+              {{ isProcessing() ? 'Processing...' : 'Process Transactions for Selected Card' }}
+            </button>
+          </div>
           
           <a [routerLink]="['./catalog']" class="btn btn-secondary full-width" style="margin-top: 0.5rem">
             🎁 Browse Rewards Catalog
@@ -98,14 +118,17 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
              <form [formGroup]="cardForm" (ngSubmit)="onAddCard()">
                 <div class="form-row">
                    <div class="form-group">
-                      <input type="text" formControlName="cardNumber" placeholder="Card Number (16 digits)" class="form-control">
-                   </div>
+                      <input type="text" formControlName="cardNumber" maxlength="16" placeholder="Card Number (16 digits)" class="form-control" [class.is-invalid]="cardForm.get('cardNumber')?.invalid && cardForm.get('cardNumber')?.touched">
+                       <div class="field-error" *ngIf="cardForm.get('cardNumber')?.errors?.['pattern'] && cardForm.get('cardNumber')?.touched">
+                           Must be 16 digits
+                       </div>
+                    </div>
                    <div class="form-group">
-                      <input type="text" formControlName="cardHolderName" placeholder="Card Holder Name" class="form-control">
-                   </div>
+                      <input type="text" formControlName="cardHolderName" placeholder="Card Holder Name" class="form-control" [class.is-invalid]="cardForm.get('cardHolderName')?.invalid && cardForm.get('cardHolderName')?.touched">
+                    </div>
                    <div class="form-group">
-                      <input type="date" formControlName="expiryDate" class="form-control">
-                   </div>
+                      <input type="date" formControlName="expiryDate" class="form-control" [class.is-invalid]="cardForm.get('expiryDate')?.invalid && cardForm.get('expiryDate')?.touched">
+                    </div>
                    <button type="submit" class="btn btn-primary btn-sm" [disabled]="cardForm.invalid">Add</button>
                    <button type="button" class="btn btn-secondary btn-sm" (click)="showAddCardForm.set(false)">Cancel</button>
                 </div>
@@ -187,10 +210,18 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
                </tbody>
                <tfoot *ngIf="transactions().length > 0">
                    <tr class="total-row">
-                       <td colspan="2">Total for Card</td>
+                       <td colspan="2">Page Total</td>
                        <td>{{ calculateTotalSpend(transactions()) | currency:'INR' }}</td>
-                       <td></td>
-                       <td>{{ calculateTotalPoints(transactions()) | number:'1.0-2' }} pts</td>
+                       <td colspan="2">{{ calculateTotalPoints(transactions()) | number:'1.0-2' }} pts</td>
+                   </tr>
+                   <tr class="pagination-row">
+                       <td colspan="5">
+                           <div class="pagination-controls">
+                               <button class="btn btn-sm btn-secondary" (click)="prevPage()" [disabled]="currentPage() === 0">Previous</button>
+                               <span>Page {{ currentPage() + 1 }} of {{ totalPages() }}</span>
+                               <button class="btn btn-sm btn-secondary" (click)="nextPage()" [disabled]="currentPage() >= totalPages() - 1">Next</button>
+                           </div>
+                       </td>
                    </tr>
                </tfoot>
             </table>
@@ -207,7 +238,7 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
                 </div>
                 <div class="redemption-items">
                     <div *ngFor="let item of redemption.items" style="font-size: 0.9rem; color: #555; margin-left: 1rem;">
-                        • {{ item.quantity }}x {{ item.rewardItemName }} ({{ item.totalPoints }} pts)
+                        • {{ item.quantity }}x {{ item.rewardItem?.name }} ({{ item.pointsCost * item.quantity }} pts)
                     </div>
                 </div>
             </div>
@@ -278,8 +309,10 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
     .card-meta { font-size: 0.85rem; color: #666; }
 
     .inline-form { background: #f9f9f9; padding: 1rem; border-radius: 6px; margin-bottom: 1rem; }
-    .form-row { display: flex; gap: 0.5rem; align-items: center; }
+    .form-row { display: flex; gap: 0.5rem; align-items: start; }
     .error-msg { color: var(--color-error); font-size: 0.8rem; margin-top: 0.5rem; }
+    .field-error { color: var(--color-error); font-size: 0.7rem; margin-top: 2px; }
+    .is-invalid { border-color: var(--color-error); }
 
     .transaction-controls { padding: 1rem; margin-bottom: 1rem; }
     .control-row { display: flex; justify-content: space-between; align-items: center; }
@@ -297,6 +330,14 @@ import { RewardBalanceResponse } from '../../../core/models/reward.model';
     .text-muted { color: #aaa; }
     
     .total-row { background: #fafafa; font-weight: bold; border-top: 2px solid #ddd; }
+    .pagination-row td { padding: 0.5rem; text-align: center; background: #fff; }
+    .pagination-controls { display: flex; justify-content: center; align-items: center; gap: 1rem; }
+    
+    .card-rewards-breakdown { margin: 1rem 0; padding: 0.75rem; background: #f5f5f5; border-radius: 6px; }
+    .card-rewards-breakdown h4 { margin: 0 0 0.5rem 0; font-size: 0.9rem; color: #666; }
+    .card-reward-item { display: flex; justify-content: space-between; padding: 0.25rem 0; font-size: 0.85rem; }
+    .card-num { font-family: monospace; color: #333; }
+    .card-pts { font-weight: bold; color: var(--color-primary-dark); }
   `]
 })
 export class CustomerProfileComponent implements OnInit {
@@ -329,6 +370,9 @@ export class CustomerProfileComponent implements OnInit {
     expiryDate: ['', Validators.required]
   });
 
+  // Card selection for processing
+  selectedCardToProcess: number | null = null;
+
   ngOnInit() {
     this.route.params.subscribe(params => {
         const id = +params['id'];
@@ -352,13 +396,34 @@ export class CustomerProfileComponent implements OnInit {
      this.cardService.getCustomerCards(id).subscribe(cards => this.creditCards.set(cards));
   }
 
-  loadTransactions(cardId: number) {
-     this.selectedCardId.set(cardId);
-     this.txService.getTransactionsByCard(cardId).subscribe(txs => {
-         // Sort by date desc
-         this.transactions.set(txs.sort((a,b) => new Date(b.transactionDate).getTime() - new Date(a.transactionDate).getTime()));
-     });
-  }
+   currentPage = signal(0);
+   totalPages = signal(0);
+
+   loadTransactions(cardId: number, page: number = 0) {
+      if (cardId !== this.selectedCardId()) {
+          this.selectedCardId.set(cardId);
+          this.currentPage.set(0); 
+          page = 0;
+      }
+      
+      this.txService.getTransactionsByCard(cardId, page).subscribe(response => {
+          this.transactions.set(response.content);
+          this.currentPage.set(response.number);
+          this.totalPages.set(response.totalPages);
+      });
+   }
+   
+   nextPage() {
+       if (this.currentPage() < this.totalPages() - 1 && this.selectedCardId()) {
+           this.loadTransactions(this.selectedCardId()!, this.currentPage() + 1);
+       }
+   }
+   
+   prevPage() {
+       if (this.currentPage() > 0 && this.selectedCardId()) {
+           this.loadTransactions(this.selectedCardId()!, this.currentPage() - 1);
+       }
+   }
   
   loadRedemptions() {
      const customerId = this.customer()?.id;
@@ -423,6 +488,23 @@ export class CustomerProfileComponent implements OnInit {
              this.rewardBalance.set(balance);
              this.isProcessing.set(false);
              // Also reload transactions if we are viewing them, as status changed
+             if (this.selectedCardId()) {
+                 this.loadTransactions(this.selectedCardId()!);
+             }
+         },
+         error: () => this.isProcessing.set(false)
+     });
+  }
+
+  processRewardsByCard() {
+     if (!this.selectedCardToProcess) return;
+
+     this.isProcessing.set(true);
+     this.rewardService.processTransactionsByCard(this.selectedCardToProcess).subscribe({
+         next: (balance) => {
+             this.rewardBalance.set(balance);
+             this.isProcessing.set(false);
+             // Reload transactions if viewing the same card
              if (this.selectedCardId()) {
                  this.loadTransactions(this.selectedCardId()!);
              }

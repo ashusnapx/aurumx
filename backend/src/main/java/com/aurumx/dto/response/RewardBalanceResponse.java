@@ -12,6 +12,16 @@ import java.math.BigDecimal;
 public class RewardBalanceResponse {
     private Long customerId;
     private String customerName;
-    private BigDecimal pointsBalance;
-    private BigDecimal lifetimeEarned;
+    private BigDecimal pointsBalance; // Total points
+    private BigDecimal lifetimeEarned; // Total lifetime
+    private java.util.List<CardRewardDto> cardRewards;
+    
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CardRewardDto {
+        private Long creditCardId;
+        private String cardNumber;
+        private BigDecimal points;
+    }
 }

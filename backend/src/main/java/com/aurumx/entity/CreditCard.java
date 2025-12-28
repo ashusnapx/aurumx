@@ -29,7 +29,7 @@ public class CreditCard {
     @Column(name = "expiry_date", nullable = false)
     private LocalDate expiryDate;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore
     @lombok.ToString.Exclude

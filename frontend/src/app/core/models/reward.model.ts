@@ -3,6 +3,13 @@ export interface RewardBalanceResponse {
   customerName: string;
   pointsBalance: number;
   lifetimeEarned: number;
+  cardRewards?: CardRewardDto[];
+}
+
+export interface CardRewardDto {
+  creditCardId: number;
+  cardNumber: string; // Masked
+  points: number;
 }
 
 export interface RedemptionHistory {

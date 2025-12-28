@@ -19,6 +19,12 @@ public class RewardController {
         RewardBalanceResponse response = rewardService.processTransactions(customerId);
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/process/card/{cardId}")
+    public ResponseEntity<RewardBalanceResponse> processTransactionsByCard(@PathVariable Long cardId) {
+        RewardBalanceResponse response = rewardService.processTransactionsByCard(cardId);
+        return ResponseEntity.ok(response);
+    }
     
     @GetMapping("/balance/{customerId}")
     public ResponseEntity<RewardBalanceResponse> getRewardBalance(@PathVariable Long customerId) {
@@ -39,5 +45,10 @@ public class RewardController {
     @GetMapping("/catalog/category/{categoryId}")
     public ResponseEntity<List<com.aurumx.entity.RewardItem>> getRewardItemsByCategory(@PathVariable Long categoryId) {
         return ResponseEntity.ok(rewardService.getRewards(categoryId));
+    }
+
+    @GetMapping("/history/{customerId}")
+    public ResponseEntity<List<com.aurumx.entity.RedemptionHistory>> getRedemptionHistory(@PathVariable Long customerId) {
+        return ResponseEntity.ok(rewardService.getRedemptionHistory(customerId));
     }
 }

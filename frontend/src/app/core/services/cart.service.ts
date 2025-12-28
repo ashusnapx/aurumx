@@ -44,7 +44,11 @@ export class CartService {
     return this.http.post<Cart>(`${this.API_URL}/add`, request);
   }
 
-  redeemCart(customerId: number): Observable<RedemptionResponse> {
-    return this.http.post<RedemptionResponse>(`${this.API_URL}/${customerId}/redeem`, {});
+  redeemCart(customerId: number, creditCardId: number): Observable<RedemptionResponse> {
+    return this.http.post<RedemptionResponse>(`${this.API_URL}/${customerId}/redeem?creditCardId=${creditCardId}`, {});
+  }
+
+  updateCartItemQuantity(itemId: number, quantity: number): Observable<void> {
+    return this.http.put<void>(`${this.API_URL}/items/${itemId}?quantity=${quantity}`, {});
   }
 }

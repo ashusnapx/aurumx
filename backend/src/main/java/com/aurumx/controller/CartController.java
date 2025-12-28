@@ -33,15 +33,23 @@ public class CartController {
         return ResponseEntity.ok(cart);
     }
     
-    @DeleteMapping("/item/{cartItemId}")
-    public ResponseEntity<Void> removeFromCart(@PathVariable Long cartItemId) {
-        cartService.removeFromCart(cartItemId);
+    @DeleteMapping("/items/{itemId}")
+    public ResponseEntity<Void> removeFromCart(@PathVariable Long itemId) {
+        cartService.removeFromCart(itemId);
         return ResponseEntity.noContent().build();
     }
     
+    @PutMapping("/items/{itemId}")
+    public ResponseEntity<Void> updateCartItemQuantity(@PathVariable Long itemId, @RequestParam int quantity) {
+        cartService.updateCartItemQuantity(itemId, quantity);
+        return ResponseEntity.ok().build();
+    }
+    
     @PostMapping("/{customerId}/redeem")
-    public ResponseEntity<RedemptionResponse> redeemCart(@PathVariable Long customerId) {
-        RedemptionResponse response = cartService.redeemCart(customerId);
+    public ResponseEntity<RedemptionResponse> redeemCart(
+            @PathVariable Long customerId, 
+            @RequestParam(required = true) Long creditCardId) {
+        RedemptionResponse response = cartService.redeemCart(customerId, creditCardId);
         return ResponseEntity.ok(response);
     }
     

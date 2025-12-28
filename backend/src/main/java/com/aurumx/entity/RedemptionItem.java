@@ -22,8 +22,9 @@ public class RedemptionItem {
     @lombok.ToString.Exclude
     private RedemptionHistory redemption;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "reward_item_id", nullable = false)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "category"})
     private RewardItem rewardItem;
     
     @Column(nullable = false)

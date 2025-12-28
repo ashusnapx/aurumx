@@ -30,7 +30,10 @@ import { CustomerService } from '../../../core/services/customer.service';
 
             <div class="form-group">
               <label>Phone</label>
-              <input type="tel" formControlName="phone" class="form-control" placeholder="9876543210">
+              <input type="tel" formControlName="phone" class="form-control" placeholder="9876543210" [class.is-invalid]="customerForm.get('phone')?.invalid && customerForm.get('phone')?.touched">
+               <div class="field-error" *ngIf="customerForm.get('phone')?.errors?.['pattern'] && customerForm.get('phone')?.touched">
+                   Must be 10 digits
+               </div>
             </div>
 
             <div class="form-group">
@@ -120,6 +123,8 @@ import { CustomerService } from '../../../core/services/customer.service';
       margin-top: 1rem;
       text-align: center;
     }
+    .field-error { color: var(--color-error); font-size: 0.8rem; margin-top: 5px; }
+    .is-invalid { border-color: var(--color-error); }
   `]
 })
 export class CustomerCreateComponent {
@@ -133,7 +138,7 @@ export class CustomerCreateComponent {
   customerForm = this.fb.group({
     name: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', Validators.required],
+    phone: ['', [Validators.required, Validators.pattern(/^\d{10}$/)]],
     associationDate: [new Date().toISOString().substring(0, 10), Validators.required]
   });
 

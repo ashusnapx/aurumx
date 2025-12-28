@@ -32,6 +32,8 @@ public class RewardService {
     private final TransactionRepository transactionRepository;
     private final com.aurumx.repository.RewardCategoryRepository rewardCategoryRepository;
     private final com.aurumx.repository.RewardItemRepository rewardItemRepository;
+    private final com.aurumx.repository.CreditCardRepository creditCardRepository;
+    private final com.aurumx.repository.RedemptionHistoryRepository redemptionHistoryRepository;
     private final RewardConfig rewardConfig;
     
     /**
@@ -48,77 +50,164 @@ public class RewardService {
         
         if (unprocessedTransactions.isEmpty()) {
             log.info("No unprocessed transactions found for customer: {}", customerId);
+            return getRewardBalance(customerId);
         }
         
-        // Get or create reward account
-        Reward reward = rewardRepository.findByCustomerId(customerId)
+        // Group transactions by credit card to update card-specific rewards
+        java.util.Map<com.aurumx.entity.CreditCard, List<Transaction>> transactionsByCard = unprocessedTransactions.stream()
+                .filter(t -> t.getCreditCard() != null)
+                .collect(java.util.stream.Collectors.groupingBy(Transaction::getCreditCard));
+                
+        BigDecimal totalNewPoints = BigDecimal.ZERO;
+        
+        int rewardPercentage = customer.getCustomerType() == CustomerType.PREMIUM 
+                ? rewardConfig.getPremiumPercentage() 
+                : rewardConfig.getRegularPercentage();
+        
+        for (java.util.Map.Entry<com.aurumx.entity.CreditCard, List<Transaction>> entry : transactionsByCard.entrySet()) {
+            com.aurumx.entity.CreditCard card = entry.getKey();
+            List<Transaction> cardTransactions = entry.getValue();
+            
+    
+            // Get or create reward account for this CARD
+            Reward reward = rewardRepository.findByCreditCardId(card.getId())
+                    .orElseGet(() -> {
+                        Reward newReward = new Reward();
+                        newReward.setCreditCard(card);
+                        newReward.setCustomer(card.getCustomer()); // Set customer to satisfy DB constraint
+                        newReward.setPointsBalance(BigDecimal.ZERO);
+                        newReward.setLifetimeEarned(BigDecimal.ZERO);
+                        return rewardRepository.save(newReward);
+                    });
+            
+            BigDecimal cardNewPoints = BigDecimal.ZERO;
+            
+            for (Transaction transaction : cardTransactions) {
+                BigDecimal rewardPoints = transaction.getAmount()
+                        .multiply(BigDecimal.valueOf(rewardPercentage))
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+                
+                cardNewPoints = cardNewPoints.add(rewardPoints);
+                
+                transaction.setProcessed(true);
+                transaction.setRewardPoints(rewardPoints);
+            }
+            
+            reward.setPointsBalance(reward.getPointsBalance().add(cardNewPoints));
+            reward.setLifetimeEarned(reward.getLifetimeEarned().add(cardNewPoints));
+            reward.setLastUpdated(LocalDateTime.now());
+            
+            rewardRepository.save(reward);
+            totalNewPoints = totalNewPoints.add(cardNewPoints);
+        }
+        
+        transactionRepository.saveAll(unprocessedTransactions);
+        
+        log.info("Processed rewards for customer {}. Total new points: {}", customer.getName(), totalNewPoints);
+        
+        return getRewardBalance(customerId);
+    }
+
+    /**
+     * Process unprocessed transactions for a specific credit card
+     */
+    @Transactional
+    public RewardBalanceResponse processTransactionsByCard(Long cardId) {
+        com.aurumx.entity.CreditCard card = creditCardRepository.findById(cardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Credit card not found with id: " + cardId));
+        
+        Customer customer = card.getCustomer();
+        
+        List<Transaction> unprocessedTransactions = transactionRepository.findByCreditCardIdAndProcessedFalse(cardId);
+        
+        if (unprocessedTransactions.isEmpty()) {
+            log.info("No unprocessed transactions found for card: {}", cardId);
+            return getRewardBalance(customer.getId());
+        }
+        
+        int rewardPercentage = customer.getCustomerType() == CustomerType.PREMIUM 
+                ? rewardConfig.getPremiumPercentage() 
+                : rewardConfig.getRegularPercentage();
+        
+        // Get or create reward account for this CARD
+        Reward reward = rewardRepository.findByCreditCardId(cardId)
                 .orElseGet(() -> {
                     Reward newReward = new Reward();
+                    newReward.setCreditCard(card);
                     newReward.setCustomer(customer);
                     newReward.setPointsBalance(BigDecimal.ZERO);
                     newReward.setLifetimeEarned(BigDecimal.ZERO);
                     return rewardRepository.save(newReward);
                 });
         
-        // Calculate total rewards from unprocessed transactions
-        BigDecimal totalRewards = BigDecimal.ZERO;
-        int rewardPercentage = customer.getCustomerType() == CustomerType.PREMIUM 
-                ? rewardConfig.getPremiumPercentage() 
-                : rewardConfig.getRegularPercentage();
-        
-        log.info("Processing {} transactions for {} customer with {}% reward rate",
-                unprocessedTransactions.size(), customer.getCustomerType(), rewardPercentage);
+        BigDecimal cardNewPoints = BigDecimal.ZERO;
         
         for (Transaction transaction : unprocessedTransactions) {
             BigDecimal rewardPoints = transaction.getAmount()
                     .multiply(BigDecimal.valueOf(rewardPercentage))
                     .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
             
-            totalRewards = totalRewards.add(rewardPoints);
+            cardNewPoints = cardNewPoints.add(rewardPoints);
             
-            // Mark transaction as processed and save points
             transaction.setProcessed(true);
             transaction.setRewardPoints(rewardPoints);
         }
         
-        // Update reward balances
-        reward.setPointsBalance(reward.getPointsBalance().add(totalRewards));
-        reward.setLifetimeEarned(reward.getLifetimeEarned().add(totalRewards));
+        reward.setPointsBalance(reward.getPointsBalance().add(cardNewPoints));
+        reward.setLifetimeEarned(reward.getLifetimeEarned().add(cardNewPoints));
         reward.setLastUpdated(LocalDateTime.now());
         
-        // Save all changes in transaction
-        transactionRepository.saveAll(unprocessedTransactions);
         rewardRepository.save(reward);
+        transactionRepository.saveAll(unprocessedTransactions);
         
-        log.info("Added {} reward points to customer {}. New balance: {}",
-                totalRewards, customer.getName(), reward.getPointsBalance());
+        log.info("Processed rewards for card {}. New points: {}", cardId, cardNewPoints);
         
-        return new RewardBalanceResponse(
-                customer.getId(),
-                customer.getName(),
-                reward.getPointsBalance(),
-                reward.getLifetimeEarned()
-        );
+        return getRewardBalance(customer.getId());
     }
     
     public RewardBalanceResponse getRewardBalance(Long customerId) {
         Customer customer = customerRepository.findByIdAndDeletedFalse(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: " + customerId));
         
-        Reward reward = rewardRepository.findByCustomerId(customerId)
-                .orElseGet(() -> {
-                    Reward newReward = new Reward();
-                    newReward.setPointsBalance(BigDecimal.ZERO);
-                    newReward.setLifetimeEarned(BigDecimal.ZERO);
-                    return newReward;
-                });
+        List<com.aurumx.entity.CreditCard> cards = creditCardRepository.findByCustomerId(customerId);
+        List<Reward> rewards = rewardRepository.findByCreditCard_CustomerId(customerId);
+        
+        // Map rewards by card ID for easy lookup
+        java.util.Map<Long, Reward> rewardMap = rewards.stream()
+                .collect(java.util.stream.Collectors.toMap(r -> r.getCreditCard().getId(), r -> r));
+        
+        BigDecimal totalPoints = BigDecimal.ZERO;
+        BigDecimal totalLifetime = BigDecimal.ZERO;
+        java.util.List<RewardBalanceResponse.CardRewardDto> cardRewards = new java.util.ArrayList<>();
+        
+        for (com.aurumx.entity.CreditCard card : cards) {
+            Reward reward = rewardMap.get(card.getId());
+            BigDecimal points = (reward != null) ? reward.getPointsBalance() : BigDecimal.ZERO;
+            
+            if (reward != null) {
+                totalPoints = totalPoints.add(reward.getPointsBalance());
+                totalLifetime = totalLifetime.add(reward.getLifetimeEarned());
+            }
+            
+            cardRewards.add(new RewardBalanceResponse.CardRewardDto(
+                card.getId(),
+                maskCardNumber(card.getCardNumber()),
+                points
+            ));
+        }
         
         return new RewardBalanceResponse(
                 customer.getId(),
                 customer.getName(),
-                reward.getPointsBalance(),
-                reward.getLifetimeEarned()
+                totalPoints,
+                totalLifetime,
+                cardRewards
         );
+    }
+    
+    private String maskCardNumber(String cardNumber) {
+        if (cardNumber == null || cardNumber.length() < 4) return "****";
+        return "**** **** **** " + cardNumber.substring(cardNumber.length() - 4);
     }
 
     public List<RewardCategory> getCategories() {
@@ -130,5 +219,9 @@ public class RewardService {
             return rewardItemRepository.findByCategoryIdAndAvailableTrue(categoryId);
         }
         return rewardItemRepository.findByAvailableTrue();
+    }
+
+    public List<com.aurumx.entity.RedemptionHistory> getRedemptionHistory(Long customerId) {
+        return redemptionHistoryRepository.findByCustomerIdOrderByRedeemedAtDesc(customerId);
     }
 }

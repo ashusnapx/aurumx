@@ -49,12 +49,7 @@ public class CustomerService {
         
         Customer savedCustomer = customerRepository.save(customer);
         
-        // Initialize reward account for customer
-        Reward reward = new Reward();
-        reward.setCustomer(savedCustomer);
-        reward.setPointsBalance(BigDecimal.ZERO);
-        reward.setLifetimeEarned(BigDecimal.ZERO);
-        rewardRepository.save(reward);
+        // Reward account will be initialized per credit card when transactions are processed
         
         return mapToResponse(savedCustomer);
     }
@@ -105,9 +100,10 @@ public class CustomerService {
     }
     
     private CustomerResponse mapToResponse(Customer customer) {
-        BigDecimal rewardBalance = rewardRepository.findByCustomerId(customer.getId())
+        BigDecimal rewardBalance = rewardRepository.findByCreditCard_CustomerId(customer.getId())
+                .stream()
                 .map(Reward::getPointsBalance)
-                .orElse(BigDecimal.ZERO);
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
         
         return new CustomerResponse(
                 customer.getId(),

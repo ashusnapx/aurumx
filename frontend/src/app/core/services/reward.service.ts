@@ -18,6 +18,10 @@ export class RewardService {
     return this.http.post<RewardBalanceResponse>(`${this.API_URL}/process/${customerId}`, {});
   }
 
+  processTransactionsByCard(cardId: number): Observable<RewardBalanceResponse> {
+    return this.http.post<RewardBalanceResponse>(`${this.API_URL}/process/card/${cardId}`, {});
+  }
+
   getCategories(): Observable<any[]> {
     return this.http.get<any[]>(`${this.API_URL}/catalog/categories`);
   }

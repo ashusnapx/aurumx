@@ -85,6 +85,25 @@ public class CartService {
     public void removeFromCart(Long cartItemId) {
         cartItemRepository.deleteById(cartItemId);
     }
+
+    @Transactional
+    public void updateCartItemQuantity(Long cartItemId, int quantity) {
+        if (quantity <= 0) {
+            cartItemRepository.deleteById(cartItemId);
+            return;
+        }
+        
+        CartItem cartItem = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cart item not found"));
+        
+        // Ensure reward item is still available if increasing (optional check, but good practice)
+        if (quantity > cartItem.getQuantity() && !cartItem.getRewardItem().isAvailable()) {
+            throw new BusinessRuleViolationException("Reward item is no longer available");
+        }
+        
+        cartItem.setQuantity(quantity);
+        cartItemRepository.save(cartItem);
+    }
     
     /**
      * Redeem all cart items for a customer
@@ -92,18 +111,24 @@ public class CartService {
      * Balance can never go negative
      */
     @Transactional
-    public RedemptionResponse redeemCart(Long customerId) {
+    public RedemptionResponse redeemCart(Long customerId, Long creditCardId) {
         Customer customer = customerRepository.findByIdAndDeletedFalse(customerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         
         List<CartItem> cartItems = cartItemRepository.findByCustomerId(customerId);
         
         if (cartItems.isEmpty()) {
-            throw new BusinessRuleViolationException("Cart is empty. Cannot redeem.");
+            throw new BusinessRuleViolationException("Cart is empty");
         }
         
-        Reward reward = rewardRepository.findByCustomerId(customerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Reward account not found"));
+        // Get Reward account for the selected CARD
+        Reward reward = rewardRepository.findByCreditCardId(creditCardId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reward account not found for this card"));
+                
+        // Verify card belongs to customer
+        if (!reward.getCreditCard().getCustomer().getId().equals(customerId)) {
+            throw new BusinessRuleViolationException("Credit card does not belong to this customer");
+        }
         
         // Calculate total points required
         BigDecimal totalPointsRequired = BigDecimal.ZERO;
@@ -112,11 +137,11 @@ public class CartService {
             totalPointsRequired = totalPointsRequired.add(BigDecimal.valueOf(itemTotal));
         }
         
-        // Check if customer has sufficient balance
+        // Check balance
         if (reward.getPointsBalance().compareTo(totalPointsRequired) < 0) {
-            throw new InsufficientRewardBalanceException(
-                    String.format("Insufficient reward balance. Required: %s, Available: %s",
-                            totalPointsRequired, reward.getPointsBalance())
+            throw new com.aurumx.exception.InsufficientRewardBalanceException(
+                    "Insufficient points balance. Required: " + totalPointsRequired + 
+                    ", Available: " + reward.getPointsBalance()
             );
         }
         
@@ -148,19 +173,16 @@ public class CartService {
         
         redemptionHistory.setItems(redemptionItems);
         
-        // Deduct points from reward balance
+        // Deduct points
         reward.setPointsBalance(reward.getPointsBalance().subtract(totalPointsRequired));
         reward.setLastUpdated(LocalDateTime.now());
         
-        // Save redemption and update reward
+        // Save
         RedemptionHistory savedRedemption = redemptionHistoryRepository.save(redemptionHistory);
         rewardRepository.save(reward);
         
         // Clear cart
-        cartItemRepository.deleteByCustomerId(customerId);
-        
-        log.info("Redeemed {} points for customer {}. New balance: {}",
-                totalPointsRequired, customer.getName(), reward.getPointsBalance());
+        cartItemRepository.deleteAll(cartItems);
         
         return new RedemptionResponse(
                 savedRedemption.getId(),

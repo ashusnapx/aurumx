@@ -20,7 +20,7 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "credit_card_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore
     @lombok.ToString.Exclude

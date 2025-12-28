@@ -70,7 +70,7 @@ public class TransactionService {
         return transactionRepository.saveAll(transactions);
     }
     
-    public List<Transaction> getTransactionsByCard(Long creditCardId) {
-        return transactionRepository.findByCreditCardId(creditCardId);
+    public org.springframework.data.domain.Page<Transaction> getTransactionsByCard(Long creditCardId, org.springframework.data.domain.Pageable pageable) {
+        return transactionRepository.findByCreditCardId(creditCardId, pageable);
     }
 }

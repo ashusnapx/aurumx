@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import com.aurumx.entity.CreditCard;
+import lombok.ToString;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
@@ -20,7 +22,11 @@ public class Reward {
     private Long id;
     
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false, unique = true)
+    @JoinColumn(name = "credit_card_id", nullable = false, unique = true)
+    private CreditCard creditCard;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
     private Customer customer;
     
     @Column(name = "points_balance", nullable = false, precision = 10, scale = 2)

@@ -9,6 +9,8 @@ AurumX is a comprehensive internal bank reward redemption system designed for Cu
 ## 🏗️ Technology Stack
 
 ### Backend
+```export JAVA_HOME=$(/usr/libexec/java_home -v 22); cd backend && mvn spring-boot:run
+```
 - **Framework**: Spring Boot 3.2.1
 - **Language**: Java 17
 - **Build Tool**: Maven
@@ -18,6 +20,8 @@ AurumX is a comprehensive internal bank reward redemption system designed for Cu
 - **Validation**: Spring Validation
 
 ### Frontend (Planned)
+```npm run start
+```
 - **Framework**: Angular 17
 - **Language**: TypeScript
 - **Styling**: CSS

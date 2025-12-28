@@ -14,7 +14,7 @@ export class TransactionService {
     return this.http.post<Transaction[]>(`${this.API_URL}/generate`, request);
   }
 
-  getTransactionsByCard(cardId: number): Observable<Transaction[]> {
-    return this.http.get<Transaction[]>(`${this.API_URL}/card/${cardId}`);
+  getTransactionsByCard(cardId: number, page: number = 0, size: number = 10): Observable<any> {
+    return this.http.get<any>(`${this.API_URL}/card/${cardId}?page=${page}&size=${size}`);
   }
 }

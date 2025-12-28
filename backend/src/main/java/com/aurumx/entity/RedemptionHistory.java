@@ -40,6 +40,6 @@ public class RedemptionHistory {
     @Column(nullable = false)
     private RedemptionStatus status = RedemptionStatus.COMPLETED;
     
-    @OneToMany(mappedBy = "redemption", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "redemption", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<RedemptionItem> items = new ArrayList<>();
 }

@@ -32,7 +32,8 @@ export const routes: Routes = [
         children: [
             { path: '', loadComponent: () => import('./features/customers/customer-profile/customer-profile.component').then(m => m.CustomerProfileComponent) },
             { path: 'catalog', loadComponent: () => import('./features/rewards/reward-catalog/reward-catalog.component').then(m => m.RewardCatalogComponent) },
-            { path: 'cart', loadComponent: () => import('./features/rewards/cart/cart.component').then(m => m.CartComponent) }
+            { path: 'cart', loadComponent: () => import('./features/rewards/cart/cart.component').then(m => m.CartComponent) },
+            { path: 'history', loadComponent: () => import('./features/rewards/redemption-history/redemption-history.component').then(m => m.RedemptionHistoryComponent) }
         ]
       },
       {
